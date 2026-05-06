@@ -1,0 +1,74 @@
+html.ih-active div[role="main"] > *:not(.ih-overlay):not(.ih-hide-chip) {
+  visibility: hidden !important;
+}
+
+.ih-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  font-family: "Google Sans", "Roboto", -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+.ih-show {
+  position: absolute;
+  top: 16px;
+  left: 24px;
+  background: transparent;
+  color: inherit;
+  border: 0;
+  padding: 8px 14px;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  border-radius: 6px;
+  transition: background-color 100ms ease;
+}
+
+.ih-show:hover { background-color: rgba(60, 64, 67, 0.08); }
+.ih-overlay.ih-dark .ih-show:hover { background-color: rgba(232, 234, 237, 0.08); }
+.ih-show:focus-visible {
+  outline: 2px solid #1a73e8;
+  outline-offset: 2px;
+}
+
+.ih-foot {
+  position: absolute;
+  bottom: 18px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 11px;
+  opacity: 0.35;
+  letter-spacing: 0.02em;
+  user-select: none;
+}
+
+.ih-kbd {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  padding: 1px 5px;
+  border-radius: 3px;
+  background: rgba(128, 128, 128, 0.15);
+}
+
+.ih-hide-chip {
+  position: absolute;
+  top: 12px;
+  right: 16px;
+  z-index: 4;
+  background: rgba(128, 128, 128, 0.12);
+  color: inherit;
+  border: 0;
+  padding: 6px 12px;
+  font-family: "Google Sans", "Roboto", sans-serif;
+  font-size: 12px;
+  font-weight: 500;
+  border-radius: 999px;
+  cursor: pointer;
+  opacity: 0.5;
+  transition: opacity 120ms ease, background-color 120ms ease;
+}
+
+.ih-hide-chip:hover {
+  opacity: 1;
+  background: rgba(128, 128, 128, 0.22);
+}
