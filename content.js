@@ -66,9 +66,13 @@
   }
 
   function applyTheme(overlay) {
+    // Use the probe ONLY to decide light vs dark. Always paint with solid
+    // known-good colors so semi-transparent Gmail layers don't blend with
+    // body-underneath (which might be the opposite theme).
     const probed = probeBg();
-    const bg = probed || (osPrefersDark() ? "rgb(31, 31, 31)" : "rgb(255, 255, 255)");
-    const dark = isDarkColor(bg);
+    const reference = probed || (osPrefersDark() ? "rgb(32, 33, 36)" : "rgb(255, 255, 255)");
+    const dark = isDarkColor(reference);
+    const bg = dark ? "rgb(32, 33, 36)" : "rgb(255, 255, 255)";
     const fg = dark ? "rgb(232, 234, 237)" : "rgb(32, 33, 36)";
     if (bg !== lastBg) { overlay.style.backgroundColor = bg; lastBg = bg; }
     if (fg !== lastFg) { overlay.style.color = fg; lastFg = fg; }
