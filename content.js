@@ -27,19 +27,24 @@
     return isInboxListView() && !revealed;
   }
 
-  // Probe Gmail's actual themed container so we follow user's theme
-  // (light, dark, or any of Gmail's custom themes).
-  function probeColor(prop) {
-    const probes = [
-      ".bkK", ".aeF", ".nH[role=main]", ".nH", '[role="main"]', "body"
-    ];
-    for (const sel of probes) {
+  // Probe Gmail's actual themed container. Walks up from [role="main"]
+  // until we find an ancestor with a non-transparent background — that's
+  // where Gmail paints its theme (light, dark, or any custom theme).
+  function probeBg() {
+    const main = document.querySelector('[role="main"]');
+    if (main) {
+      let el = main;
+      while (el && el !== document.documentElement) {
+        const bg = getComputedStyle(el).backgroundColor;
+        if (bg && bg !== "rgba(0, 0, 0, 0)" && bg !== "transparent") return bg;
+        el = el.parentElement;
+      }
+    }
+    for (const sel of [".bkK", ".aeF", ".nH", "body"]) {
       const el = document.querySelector(sel);
       if (!el) continue;
-      const v = getComputedStyle(el)[prop];
-      if (!v) continue;
-      if (v === "rgba(0, 0, 0, 0)" || v === "transparent") continue;
-      return v;
+      const bg = getComputedStyle(el).backgroundColor;
+      if (bg && bg !== "rgba(0, 0, 0, 0)" && bg !== "transparent") return bg;
     }
     return null;
   }
@@ -53,10 +58,17 @@
     return luminance < 128;
   }
 
+  function osPrefersDark() {
+    return !!(window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches);
+  }
+
   function applyTheme(overlay) {
-    const bg = probeColor("backgroundColor") || "#ffffff";
-    const fg = probeColor("color") || (isDarkColor(bg) ? "#e3e3e3" : "#202124");
+    const probed = probeBg();
+    // Initial paint can run before Gmail's themed container exists.
+    // Fall back to OS preference so we don't flash the wrong theme.
+    const bg = probed || (osPrefersDark() ? "rgb(31, 31, 31)" : "rgb(255, 255, 255)");
     const dark = isDarkColor(bg);
+    const fg = dark ? "rgb(232, 234, 237)" : "rgb(32, 33, 36)";
     if (bg !== lastBg) {
       overlay.style.backgroundColor = bg;
       lastBg = bg;
@@ -70,6 +82,18 @@
       lastDark = dark;
     }
   }
+
+  // Expose a debug snapshot so we can diagnose theme detection issues.
+  window.__inboxHiddenDebug = function () {
+    const main = document.querySelector('[role="main"]');
+    return {
+      probedBg: probeBg(),
+      osPrefersDark: osPrefersDark(),
+      lastBg, lastFg, lastDark,
+      bodyBg: getComputedStyle(document.body).backgroundColor,
+      mainBg: main ? getComputedStyle(main).backgroundColor : null,
+    };
+  };
 
   function buildOverlay() {
     const ov = document.createElement("div");
@@ -166,6 +190,15 @@
     },
     true
   );
+
+  // Fast re-probe during the first 2s so we catch Gmail's theme as soon as
+  // it paints, rather than flashing the OS-fallback color.
+  let fastTicks = 0;
+  const fastTimer = setInterval(function () {
+    update();
+    fastTicks += 1;
+    if (fastTicks >= 20) clearInterval(fastTimer);
+  }, 100);
 
   setInterval(update, 400);
 
