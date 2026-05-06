@@ -1,21 +1,19 @@
-/* Hide inbox content as soon as <html> gets .ih-active (sync at document_start). */
+/* Hide inbox content as soon as <html> gets .ih-active (added sync at document_start). */
 html.ih-active div[role="main"] > *:not(.ih-overlay) {
   visibility: hidden !important;
 }
 
-/* OS-fallback bg painted on body before our JS overlay attaches.
-   Prevents the white flash on dark-mode systems. */
+/* OS-fallback bg painted on body before our JS overlay attaches. */
 html.ih-active body {
   background-color: #ffffff;
 }
 @media (prefers-color-scheme: dark) {
   html.ih-active body {
-    background-color: #1f1f1f;
+    background-color: rgb(32, 33, 36);
   }
 }
-/* If JS detects Gmail is in dark mode, force it regardless of OS. */
 html.ih-dark.ih-active body {
-  background-color: #1f1f1f;
+  background-color: rgb(32, 33, 36);
 }
 
 .ih-overlay {
@@ -27,67 +25,76 @@ html.ih-dark.ih-active body {
 
 .ih-show {
   position: absolute;
-  top: 16px;
-  left: 24px;
-  background: transparent;
-  color: inherit;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: rgb(26, 115, 232);
+  color: #ffffff;
   border: 0;
-  padding: 8px 14px;
-  font: inherit;
-  font-size: 14px;
+  padding: 14px 32px;
+  font-family: inherit;
+  font-size: 16px;
   font-weight: 500;
   cursor: pointer;
-  border-radius: 6px;
-  transition: background-color 100ms ease;
+  border-radius: 999px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+  transition: background 120ms ease, box-shadow 120ms ease, transform 120ms ease;
 }
-.ih-show:hover { background-color: rgba(60, 64, 67, 0.08); }
-.ih-overlay.ih-dark .ih-show:hover { background-color: rgba(232, 234, 237, 0.08); }
+.ih-show:hover {
+  background: rgb(23, 101, 204);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35);
+  transform: translate(-50%, calc(-50% - 1px));
+}
+.ih-show:active {
+  transform: translate(-50%, -50%);
+}
 .ih-show:focus-visible {
-  outline: 2px solid #1a73e8;
-  outline-offset: 2px;
+  outline: 3px solid rgba(138, 180, 248, 0.5);
+  outline-offset: 3px;
 }
 
 .ih-foot {
   position: absolute;
-  bottom: 18px;
+  bottom: 28px;
   left: 50%;
   transform: translateX(-50%);
-  font-size: 11px;
-  opacity: 0.4;
+  font-size: 12px;
+  opacity: 0.55;
   letter-spacing: 0.02em;
   user-select: none;
 }
 
 .ih-kbd {
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-  padding: 1px 5px;
+  padding: 1px 6px;
   border-radius: 3px;
-  background: rgba(128, 128, 128, 0.18);
+  background: rgba(128, 128, 128, 0.22);
+  font-size: 11px;
 }
 
-/* Hide chip: pinned bottom-right of the viewport so it survives any Gmail
-   re-render of the main pane and never gets clipped. */
+/* Hide chip: pinned top-right of the viewport so it's always visible
+   above Gmail UI and never gets clipped by re-rendering. */
 .ih-hide-chip {
   position: fixed !important;
-  bottom: 24px;
-  right: 24px;
+  top: 78px;
+  right: 28px;
   z-index: 99999;
-  background: #1a73e8;
+  background: rgb(26, 115, 232);
   color: #ffffff;
   border: 0;
-  padding: 10px 18px;
+  padding: 10px 20px;
   border-radius: 999px;
   font-family: "Google Sans", "Roboto", -apple-system, sans-serif;
   font-size: 13px;
   font-weight: 500;
   cursor: pointer;
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4);
   opacity: 1;
   transition: background 120ms ease, box-shadow 120ms ease, transform 120ms ease;
 }
 .ih-hide-chip:hover {
-  background: #1765cc;
-  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.3);
+  background: rgb(23, 101, 204);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.45);
   transform: translateY(-1px);
 }
 .ih-hide-chip:active { transform: translateY(0); }

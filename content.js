@@ -1,6 +1,10 @@
 (function () {
   "use strict";
 
+  // Visible signal in DevTools console so the user can confirm the
+  // extension is actually loaded.
+  console.log("[Inbox Hidden] content script loaded");
+
   // ---- sync init ----
   // Runs at document_start, before <body> exists. Adds .ih-active to
   // <html> immediately so CSS hides the inbox from the very first paint
@@ -104,14 +108,20 @@
   function buildOverlay() {
     const ov = document.createElement("div");
     ov.className = "ih-overlay";
-    ov.innerHTML =
-      '<button class="ih-show" type="button" data-ih="reveal">Show Inbox</button>' +
-      '<div class="ih-foot"><span class="ih-kbd">⌘⇧I</span> to toggle</div>';
-    ov.querySelector('[data-ih="reveal"]').addEventListener("click", function (e) {
+    const btn = document.createElement("button");
+    btn.className = "ih-show";
+    btn.type = "button";
+    btn.textContent = "Show Inbox";
+    btn.addEventListener("click", function (e) {
       e.preventDefault();
       revealed = true;
       update();
     });
+    const foot = document.createElement("div");
+    foot.className = "ih-foot";
+    foot.innerHTML = '<span class="ih-kbd">⌘⇧I</span> to toggle';
+    ov.appendChild(btn);
+    ov.appendChild(foot);
     return ov;
   }
 
