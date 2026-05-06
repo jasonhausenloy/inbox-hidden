@@ -1,35 +1,39 @@
 (function () {
   "use strict";
 
+  // ---- sync init ----
+  // Runs at document_start, before <body> exists. Adds .ih-active to
+  // <html> immediately so CSS hides the inbox from the very first paint
+  // (no white flash before Gmail renders).
+  function _isInboxNow() {
+    const h = location.hash.replace(/^#/, "");
+    return (
+      h === "" ||
+      h === "inbox" ||
+      /^inbox\/p\d+$/.test(h) ||
+      /^inbox\?/.test(h)
+    );
+  }
+  if (_isInboxNow() && document.documentElement) {
+    document.documentElement.classList.add("ih-active");
+  }
+
+  // ---- state ----
   let revealed = false;
   let lastBg = null;
   let lastFg = null;
   let lastDark = null;
 
-  function hashPath() {
-    return location.hash.replace(/^#/, "");
-  }
-
-  function isInboxListView() {
-    const h = hashPath();
-    if (h === "" || h === "inbox") return true;
-    if (/^inbox\/p\d+$/.test(h)) return true;
-    if (/^inbox\?/.test(h)) return true;
-    return false;
-  }
+  function isInboxListView() { return _isInboxNow(); }
 
   function isInboxArea() {
-    const h = hashPath();
+    const h = location.hash.replace(/^#/, "");
     return h === "" || h === "inbox" || h.startsWith("inbox/") || h.startsWith("inbox?");
   }
 
-  function shouldHide() {
-    return isInboxListView() && !revealed;
-  }
+  function shouldHide() { return isInboxListView() && !revealed; }
 
-  // Probe Gmail's actual themed container. Walks up from [role="main"]
-  // until we find an ancestor with a non-transparent background — that's
-  // where Gmail paints its theme (light, dark, or any custom theme).
+  // ---- theme detection ----
   function probeBg() {
     const main = document.querySelector('[role="main"]');
     if (main) {
@@ -54,8 +58,7 @@
     const m = rgb.match(/\d+(\.\d+)?/g);
     if (!m || m.length < 3) return false;
     const [r, g, b] = m.slice(0, 3).map(Number);
-    const luminance = 0.2126 * r + 0.7152 * g + 0.0722 * b;
-    return luminance < 128;
+    return 0.2126 * r + 0.7152 * g + 0.0722 * b < 128;
   }
 
   function osPrefersDark() {
@@ -64,44 +67,42 @@
 
   function applyTheme(overlay) {
     const probed = probeBg();
-    // Initial paint can run before Gmail's themed container exists.
-    // Fall back to OS preference so we don't flash the wrong theme.
     const bg = probed || (osPrefersDark() ? "rgb(31, 31, 31)" : "rgb(255, 255, 255)");
     const dark = isDarkColor(bg);
     const fg = dark ? "rgb(232, 234, 237)" : "rgb(32, 33, 36)";
-    if (bg !== lastBg) {
-      overlay.style.backgroundColor = bg;
-      lastBg = bg;
-    }
-    if (fg !== lastFg) {
-      overlay.style.color = fg;
-      lastFg = fg;
-    }
+    if (bg !== lastBg) { overlay.style.backgroundColor = bg; lastBg = bg; }
+    if (fg !== lastFg) { overlay.style.color = fg; lastFg = fg; }
     if (dark !== lastDark) {
       overlay.classList.toggle("ih-dark", dark);
+      document.documentElement.classList.toggle("ih-dark", dark);
       lastDark = dark;
     }
   }
 
-  // Expose a debug snapshot so we can diagnose theme detection issues.
   window.__inboxHiddenDebug = function () {
     const main = document.querySelector('[role="main"]');
     return {
+      revealed,
+      shouldHide: shouldHide(),
+      isInboxListView: isInboxListView(),
       probedBg: probeBg(),
       osPrefersDark: osPrefersDark(),
       lastBg, lastFg, lastDark,
-      bodyBg: getComputedStyle(document.body).backgroundColor,
+      bodyBg: document.body ? getComputedStyle(document.body).backgroundColor : null,
       mainBg: main ? getComputedStyle(main).backgroundColor : null,
+      htmlClass: document.documentElement.className,
+      overlayPresent: !!document.querySelector(".ih-overlay"),
+      hideChipPresent: !!document.querySelector(".ih-hide-chip"),
     };
   };
 
+  // ---- DOM nodes ----
   function buildOverlay() {
     const ov = document.createElement("div");
     ov.className = "ih-overlay";
-    ov.innerHTML = `
-      <button class="ih-show" type="button" data-ih="reveal">Show Inbox</button>
-      <div class="ih-foot"><span class="ih-kbd">⌘⇧I</span> to toggle</div>
-    `;
+    ov.innerHTML =
+      '<button class="ih-show" type="button" data-ih="reveal">Show Inbox</button>' +
+      '<div class="ih-foot"><span class="ih-kbd">⌘⇧I</span> to toggle</div>';
     ov.querySelector('[data-ih="reveal"]').addEventListener("click", function (e) {
       e.preventDefault();
       revealed = true;
@@ -135,12 +136,12 @@
     applyTheme(ov);
   }
 
+  // Hide chip is appended to <body> with position:fixed so it survives
+  // Gmail re-rendering the main pane and floats above all Gmail UI.
   function ensureHideChip() {
-    const main = document.querySelector('div[role="main"]');
-    if (!main) return;
-    if (main.querySelector(":scope > .ih-hide-chip")) return;
-    if (!main.style.position) main.style.position = "relative";
-    main.appendChild(buildHideChip());
+    if (!document.body) return;
+    if (document.body.querySelector(":scope > .ih-hide-chip")) return;
+    document.body.appendChild(buildHideChip());
   }
 
   function removeOverlays() {
@@ -160,19 +161,16 @@
     } else {
       root.classList.remove("ih-active");
       removeOverlays();
-      if (revealed && isInboxListView()) {
-        ensureHideChip();
-      } else {
-        removeHideChips();
-      }
+      if (revealed && isInboxListView()) ensureHideChip();
+      else removeHideChips();
     }
   }
 
+  // ---- listeners ----
   let prevInArea = isInboxArea();
   window.addEventListener("hashchange", function () {
     const nowInArea = isInboxArea();
-    if (prevInArea && !nowInArea) revealed = false;
-    if (!prevInArea && nowInArea) revealed = false;
+    if (prevInArea !== nowInArea) revealed = false;
     prevInArea = nowInArea;
     update();
   });
@@ -191,15 +189,12 @@
     true
   );
 
-  // Fast re-probe during the first 2s so we catch Gmail's theme as soon as
-  // it paints, rather than flashing the OS-fallback color.
+  // Fast re-probe during first 2s to catch Gmail's theme as soon as it paints.
   let fastTicks = 0;
   const fastTimer = setInterval(function () {
     update();
-    fastTicks += 1;
-    if (fastTicks >= 20) clearInterval(fastTimer);
+    if (++fastTicks >= 20) clearInterval(fastTimer);
   }, 100);
-
   setInterval(update, 400);
 
   if (document.readyState === "loading") {

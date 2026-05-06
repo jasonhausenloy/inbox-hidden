@@ -1,5 +1,21 @@
-html.ih-active div[role="main"] > *:not(.ih-overlay):not(.ih-hide-chip) {
+/* Hide inbox content as soon as <html> gets .ih-active (sync at document_start). */
+html.ih-active div[role="main"] > *:not(.ih-overlay) {
   visibility: hidden !important;
+}
+
+/* OS-fallback bg painted on body before our JS overlay attaches.
+   Prevents the white flash on dark-mode systems. */
+html.ih-active body {
+  background-color: #ffffff;
+}
+@media (prefers-color-scheme: dark) {
+  html.ih-active body {
+    background-color: #1f1f1f;
+  }
+}
+/* If JS detects Gmail is in dark mode, force it regardless of OS. */
+html.ih-dark.ih-active body {
+  background-color: #1f1f1f;
 }
 
 .ih-overlay {
@@ -24,7 +40,6 @@ html.ih-active div[role="main"] > *:not(.ih-overlay):not(.ih-hide-chip) {
   border-radius: 6px;
   transition: background-color 100ms ease;
 }
-
 .ih-show:hover { background-color: rgba(60, 64, 67, 0.08); }
 .ih-overlay.ih-dark .ih-show:hover { background-color: rgba(232, 234, 237, 0.08); }
 .ih-show:focus-visible {
@@ -38,7 +53,7 @@ html.ih-active div[role="main"] > *:not(.ih-overlay):not(.ih-hide-chip) {
   left: 50%;
   transform: translateX(-50%);
   font-size: 11px;
-  opacity: 0.35;
+  opacity: 0.4;
   letter-spacing: 0.02em;
   user-select: none;
 }
@@ -47,28 +62,32 @@ html.ih-active div[role="main"] > *:not(.ih-overlay):not(.ih-hide-chip) {
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
   padding: 1px 5px;
   border-radius: 3px;
-  background: rgba(128, 128, 128, 0.15);
+  background: rgba(128, 128, 128, 0.18);
 }
 
+/* Hide chip: pinned bottom-right of the viewport so it survives any Gmail
+   re-render of the main pane and never gets clipped. */
 .ih-hide-chip {
-  position: absolute;
-  top: 12px;
-  right: 16px;
-  z-index: 4;
-  background: rgba(128, 128, 128, 0.12);
-  color: inherit;
+  position: fixed !important;
+  bottom: 24px;
+  right: 24px;
+  z-index: 99999;
+  background: #1a73e8;
+  color: #ffffff;
   border: 0;
-  padding: 6px 12px;
-  font-family: "Google Sans", "Roboto", sans-serif;
-  font-size: 12px;
-  font-weight: 500;
+  padding: 10px 18px;
   border-radius: 999px;
+  font-family: "Google Sans", "Roboto", -apple-system, sans-serif;
+  font-size: 13px;
+  font-weight: 500;
   cursor: pointer;
-  opacity: 0.5;
-  transition: opacity 120ms ease, background-color 120ms ease;
-}
-
-.ih-hide-chip:hover {
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
   opacity: 1;
-  background: rgba(128, 128, 128, 0.22);
+  transition: background 120ms ease, box-shadow 120ms ease, transform 120ms ease;
 }
+.ih-hide-chip:hover {
+  background: #1765cc;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.3);
+  transform: translateY(-1px);
+}
+.ih-hide-chip:active { transform: translateY(0); }
